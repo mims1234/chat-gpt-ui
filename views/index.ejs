@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ChatGPT App</title>
+  <link rel="stylesheet" href="/styles.css">
+  <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/11.5.0/styles/default.min.css">
+  <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/11.5.0/highlight.min.js"></script>
+  <script>hljs.highlightAll();</script>
+  <script src="/script.js" defer></script>
+</head>
+<body>
+  <% if (messages.length > 0) { %>
+    <div class="chat-history">
+      <div class="chat-box">
+        <% messages.forEach(function(message, index) { %>
+          <div class="<%= message.role %>">
+            <strong><%= message.role === 'user' ? 'User' : 'ChatGPT' %>:</strong>
+            <% if (message.role === 'assistant' && index === messages.length - 1) { %>
+              <div class="model-tag">Model used: <%= model %></div>
+            <% } %>
+            <div class="markdown"><%- marked(message.content) %></div>
+          </div>
+        <% }); %>
+      </div>
+    </div>
+  <% } %>
+  <div class="chat-container" id="chat-container">
+    <h1><a href="/" class="title-link">ChatGPT App</a></h1>
+    <button id="toggle-chat">Minimize</button>
+    <div id="chat-content">
+      <form action="/ask" method="POST">
+        <div class="model-selector">
+          <label for="model">Select Model:</label>
+          <select name="model" id="model">
+            <option value="gpt-3.5-turbo" <% if (model === 'gpt-3.5-turbo') { %>selected<% } %>>GPT-3.5 Turbo</option>
+            <option value="gpt-4" <% if (model === 'gpt-4') { %>selected<% } %>>GPT-4</option>
+            <option value="gpt-4o" <% if (model === 'gpt-4o') { %>selected<% } %>>GPT-4o</option>
+          </select>
+        </div>
+        <textarea name="prompt" id="prompt" placeholder="Type your prompt here..."></textarea>
+        <button type="submit">Send</button>
+      </form>
+      <form action="/clear" method="POST">
+        <button type="submit">Clear Conversation</button>
+      </form>
+    </div>
+  </div>
+</body>
+</html>

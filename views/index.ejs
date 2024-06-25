@@ -1,51 +1,117 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ChatGPT App</title>
-  <link rel="stylesheet" href="/styles.css">
-  <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/11.5.0/styles/default.min.css">
-  <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/11.5.0/highlight.min.js"></script>
+  <title>MiMs AI Platform</title>
+  <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/11.4.0/styles/default.min.css">
+  <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/11.4.0/highlight.min.js"></script>
   <script>hljs.highlightAll();</script>
-  <script src="/script.js" defer></script>
+  <link rel="stylesheet" type="text/css" href="styles.css">
+  <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
-  <% if (messages.length > 0) { %>
-    <div class="chat-history">
-      <div class="chat-box">
-        <% messages.forEach(function(message, index) { %>
-          <div class="<%= message.role %>">
-            <strong><%= message.role === 'user' ? 'User' : 'ChatGPT' %>:</strong>
-            <% if (message.role === 'assistant' && index === messages.length - 1) { %>
-              <div class="model-tag">Model used: <%= model %></div>
+
+  <div class="chat-container">
+    <main>
+      <section class="chat-history">
+        <ul id="chat-history-list">
+          <% messages.forEach(message => { %>
+            <% if (message.role === 'system') { %>
+              <li class="system-message">
+                <div class="system-content">
+                  --- <%= message.content %> ---
+                </div>
+              </li>
+            <% } else { %>
+              <li class="<%= message.role === 'user' ? 'you' : 'mims-ai' %>">
+                <div class="message-content" id="<%= message.role === 'user' ? 'user-message' : '' %>">
+                  <% if (message.role !== 'user') { %>
+                    <strong>MiMs AI:</strong>
+                    <div class="rendered-content"><%- message.renderedContent %></div>
+                  <% } else { %>
+                    <strong>You:</strong>
+                    <%= message.content %>
+                  <% } %>
+                </div>
+                <div class="message-info">
+                  <% if (message.timeTaken) { %>
+                    <span class="time-taken"><%= message.timeTaken %></span>
+                  <% } %>
+                  <% if (message.tokensUsed) { %>
+                    <span class="tokens-used">Tokens: <%= message.tokensUsed %></span>
+                  <% } %>
+                  <% if (message.model) { %>
+                    <span class="model">Model: <%= message.model %></span>
+                  <% } %>
+                </div>
+              </li>
             <% } %>
-            <div class="markdown"><%- marked(message.content) %></div>
-          </div>
-        <% }); %>
-      </div>
-    </div>
-  <% } %>
-  <div class="chat-container" id="chat-container">
-    <h1><a href="/" class="title-link">ChatGPT App</a></h1>
-    <button id="toggle-chat">Minimize</button>
-    <div id="chat-content">
-      <form action="/ask" method="POST">
-        <div class="model-selector">
-          <label for="model">Select Model:</label>
-          <select name="model" id="model">
-            <option value="gpt-3.5-turbo" <% if (model === 'gpt-3.5-turbo') { %>selected<% } %>>GPT-3.5 Turbo</option>
-            <option value="gpt-4" <% if (model === 'gpt-4') { %>selected<% } %>>GPT-4</option>
-            <option value="gpt-4o" <% if (model === 'gpt-4o') { %>selected<% } %>>GPT-4o</option>
+          <% }); %>
+        </ul>
+      </section>
+    </main>
+    <footer>
+      <!-- Add this inside the form in index.js -->
+      <div class="loading-indicator" id="loading-indicator" style="display: none;">
+        <span class="loading-text">Loading</span>
+      </div> <!-- Add this line -->
+      <form action="/ask" method="post" class="chat-form" id="chat-form">
+        <textarea name="prompt" id="prompt" placeholder="Ask your question..." required></textarea>
+        <div class="options">
+          <label class="model-choose" title="Model selection is disabled during a conversation. Clear conversation to enable.">Choose a model:</label>
+          <select name="model" id="model" <%= messages.length > 0 ? 'disabled' : '' %>>
+            <!-- OpenAI Models -->
+            <option value="gpt-3.5-turbo" <%= selectedModel === 'gpt-3.5-turbo' ? 'selected' : '' %>>OpenAI GPT-3.5 Turbo</option>
+            <option value="gpt-4" <%= selectedModel === 'gpt-4' ? 'selected' : '' %>>OpenAI GPT-4</option>
+            <option value="gpt-4o" <%= selectedModel === 'gpt-4o' ? 'selected' : '' %>>OpenAI GPT-4o</option>
+            <!-- GROQ Models -->
+            <option value="llama3-8b-8192" <%= selectedModel === 'llama3-8b-8192' ? 'selected' : '' %>>LLaMA3 8b</option>
+            <option value="llama3-70b-8192" <%= selectedModel === 'llama3-70b-8192' ? 'selected' : '' %>>LLaMA3 70b</option>
+            <option value="mixtral-8x7b-32768" <%= selectedModel === 'mixtral-8x7b-32768' ? 'selected' : '' %>>Mixtral 8x7b</option>
+            <option value="gemma-7b-it" <%= selectedModel === 'gemma-7b-it' ? 'selected' : '' %>>Gemma 7b</option>
           </select>
         </div>
-        <textarea name="prompt" id="prompt" placeholder="Type your prompt here..."></textarea>
-        <button type="submit">Send</button>
+        <div class="form-actions">
+          <button type="submit" id="ask-button">Ask</button>
+          <header>
+            <h1><a href="/">MiMs AI Platform</a></h1>
+          </header>
+          <button type="button" id="clear-button" onclick="clearConversation()">Clear Conversation</button>
+        </div>
       </form>
-      <form action="/clear" method="POST">
-        <button type="submit">Clear Conversation</button>
-      </form>
-    </div>
+
+      <div class="character-count" id="character-count"></div>
+    </footer>
   </div>
+  <script>
+    function copyCode(button) {
+      const codeBlock = button.parentElement.nextElementSibling;
+      navigator.clipboard.writeText(codeBlock.innerText).then(() => {
+        alert('Code copied to clipboard!');
+      }).catch(err => {
+        console.error('Failed to copy code: ', err);
+      });
+    }
+
+    function scrollToBottom() {
+      const mainSection = document.querySelector('main');
+      mainSection.scrollTop = mainSection.scrollHeight;
+    }
+
+    document.addEventListener('DOMContentLoaded', (event) => {
+      scrollToBottom();
+    });
+
+    document.getElementById('chat-form').addEventListener('submit', function() {
+      setTimeout(scrollToBottom, 100);
+    });
+
+    function clearConversation() {
+      fetch('/clear', { method: 'POST' })
+      .then(() => {
+        window.location.reload();
+      });
+    }
+  </script>
+  <script src="script.js"></script>
 </body>
 </html>

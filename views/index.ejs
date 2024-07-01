@@ -50,10 +50,9 @@
       </section>
     </main>
     <footer>
-      <!-- Add this inside the form in index.js -->
       <div class="loading-indicator" id="loading-indicator" style="display: none;">
         <span class="loading-text">Loading</span>
-      </div> <!-- Add this line -->
+      </div>
       <form action="/ask" method="post" class="chat-form" id="chat-form">
         <textarea name="prompt" id="prompt" placeholder="Ask your question..." required></textarea>
         <div class="options">
@@ -68,6 +67,13 @@
             <option value="llama3-70b-8192" <%= selectedModel === 'llama3-70b-8192' ? 'selected' : '' %>>LLaMA3 70b</option>
             <option value="mixtral-8x7b-32768" <%= selectedModel === 'mixtral-8x7b-32768' ? 'selected' : '' %>>Mixtral 8x7b</option>
             <option value="gemma-7b-it" <%= selectedModel === 'gemma-7b-it' ? 'selected' : '' %>>Gemma 7b</option>
+            <!-- Ollama Models -->
+            <option value="ollama-gemma2:9b-instruct-q3_K_S" <%= selectedModel === 'ollama-gemma2:9b-instruct-q3_K_S' ? 'selected' : '' %>>Ollama Gemma2 9B</option>
+            <option value="ollama-fusechat7b" <%= selectedModel === 'ollama-fusechat7b' ? 'selected' : '' %>>Ollama Fusechat 7B</option>
+            <option value="ollama-zephyr7b" <%= selectedModel === 'ollama-zephyr7b' ? 'selected' : '' %>>Ollama Zephyr 7b</option>
+            <option value="ollama-qwen2:7b" <%= selectedModel === 'ollama-qwen2:7b' ? 'selected' : '' %>>Ollama Qwen2 7B</option>
+            <option value="ollama-qwen2:1.5b" <%= selectedModel === 'ollama-qwen2:1.5b' ? 'selected' : '' %>>Ollama Qwen2 1.5B</option>
+            <!-- Add more Ollama models as needed -->
           </select>
         </div>
         <div class="form-actions">

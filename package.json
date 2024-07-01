@@ -22,7 +22,8 @@
     "highlight.js": "^11.4.0",
     "markdown-it": "^12.3.2",
     "marked": "^4.0.10",
-    "nodemon": "^3.1.0"
+    "nodemon": "^3.1.0",
+    "ollama": "^0.5.2"
   },
   "repository": {
     "type": "git",

@@ -6,6 +6,7 @@ const cookieParser = require('cookie-parser');
 const MarkdownIt = require('markdown-it');
 const hljs = require('highlight.js');
 const Groq = require('groq-sdk');
+const { Ollama } = require('ollama');
 require('dotenv').config();
 
 const app = express();
@@ -23,6 +24,15 @@ const md = new MarkdownIt({
 });
 
 const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
+const ollama = new Ollama({ host: 'http://127.0.0.1:11434' });
+// const ollama = new Ollama({ host: 'http://192.168.1.12:11434' });
+
+// Define model-specific system prompts
+const modelSystemPrompts = {
+  openai: "You are a helpful assistant created by OpenAI.",
+  groq: "You are an AI assistant powered by Groq, designed to help with a wide range of tasks.",
+  ollama: "You are a locally-hosted AI assistant using Ollama, capable of various tasks and conversations."
+};
 
 app.set('view engine', 'ejs');
 app.use(bodyParser.urlencoded({ extended: true }));
@@ -44,21 +54,37 @@ app.get('/', (req, res) => {
 app.post('/ask', async (req, res) => {
   const { prompt, model } = req.body;
 
-  // Store the selected model in the session if provided
   if (model) {
     req.session.selectedModel = model;
   }
 
-  // Use the stored model or default to 'gpt-3.5-turbo'
   const selectedModel = req.session.selectedModel || 'gpt-3.5-turbo';
 
-  req.session.messages = req.session.messages || [];
   const now = new Date();
   const formattedDateTime = now.toLocaleString('en-US', {
     month: 'short', day: 'numeric', hour: 'numeric', minute: 'numeric', hour12: true
   });
 
-  req.session.messages.push({ role: 'system', content: formattedDateTime });
+  // Add model-specific system prompt
+  let systemPrompt;
+  if (selectedModel.startsWith('gpt')) {
+    systemPrompt = modelSystemPrompts.openai;
+  } else if (selectedModel.startsWith('ollama-')) {
+    systemPrompt = modelSystemPrompts.ollama;
+  } else {
+    systemPrompt = modelSystemPrompts.groq;
+  }
+
+  req.session.messages = req.session.messages || [];
+  
+  // If it's a new conversation or the model has changed, reset the messages
+  if (req.session.messages.length === 0 || req.session.messages[0].content !== systemPrompt) {
+    req.session.messages = [
+      { role: 'system', content: systemPrompt },
+      { role: 'system', content: formattedDateTime }
+    ];
+  }
+
   req.session.messages.push({ role: 'user', content: prompt });
 
   const startTime = Date.now();
@@ -67,12 +93,14 @@ app.post('/ask', async (req, res) => {
     let chatCompletion;
     if (selectedModel.startsWith('gpt')) {
       chatCompletion = await getOpenAIChatCompletion(req.session.messages, selectedModel);
+    } else if (selectedModel.startsWith('ollama-')) {
+      chatCompletion = await getOllamaChatCompletion(req.session.messages, selectedModel.replace('ollama-', ''));
     } else {
       chatCompletion = await getGroqChatCompletion(req.session.messages, selectedModel);
     }
 
     const reply = chatCompletion.choices[0]?.message?.content || "";
-    const tokensUsed = chatCompletion.usage.total_tokens;
+    const tokensUsed = chatCompletion.usage?.total_tokens || 0;
 
     const endTime = Date.now();
     const timeTaken = endTime - startTime;
@@ -92,7 +120,6 @@ app.post('/ask', async (req, res) => {
     res.render('index', { messages: req.session.messages, error: 'Sorry, there was an error processing your request.', selectedModel });
   }
 });
-
 
 async function getOpenAIChatCompletion(messages, model) {
   const formattedMessages = messages.map(msg => ({
@@ -121,6 +148,29 @@ async function getGroqChatCompletion(messages, model) {
     messages: formattedMessages,
     model
   });
+}
+
+async function getOllamaChatCompletion(messages, model) {
+  const formattedMessages = messages.map(msg => ({
+    role: msg.role,
+    content: msg.content
+  }));
+
+  try {
+    const response = await ollama.chat({
+      model: model,
+      messages: formattedMessages,
+    });
+
+    // Format the response to match the structure expected by the existing code
+    return {
+      choices: [{ message: { content: response.message.content } }],
+      usage: { total_tokens: response.prompt_eval_count + response.eval_count }
+    };
+  } catch (error) {
+    console.error('Error calling Ollama:', error);
+    throw error;
+  }
 }
 
 app.post('/clear', (req, res) => {

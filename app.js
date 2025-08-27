@@ -23,6 +23,7 @@ const md = new MarkdownIt({
   }
 });
 
+console.warn(process.env.testKEY)
 const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 const ollama = new Ollama({ host: 'http://127.0.0.1:11434' });
 // const ollama = new Ollama({ host: 'http://192.168.1.12:11434' });

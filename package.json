@@ -33,5 +33,6 @@
     "url": "https://github.com/mims1234/chat-gpt-ui/issues"
   },
   "homepage": "https://github.com/mims1234/chat-gpt-ui#readme",
+  "devDependencies": {},
   "description": ""
 }
